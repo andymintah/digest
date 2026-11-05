@@ -19,12 +19,10 @@ from pathlib import Path
 import feedparser, requests, trafilatura
 from anthropic import Anthropic
 
-# ---- Your sources (RSS/Atom URLs) ----
-FEEDS = [
-    "https://hnrss.org/frontpage",
-    "https://www.theverge.com/rss/index.xml",
-]
-MAX_PER_FEED = 3
+# Set FEEDS to newline-separated RSS/Atom URLs to override these defaults.
+DEFAULT_FEEDS = "https://hnrss.org/frontpage\nhttps://www.theverge.com/rss/index.xml"
+FEEDS = (os.getenv("FEEDS") or DEFAULT_FEEDS).splitlines()
+MAX_PER_FEED = int(os.getenv("MAX_PER_FEED", "3"))
 MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-5-5")
 SEEN_FILE = Path(__file__).with_name("seen.json")
 
