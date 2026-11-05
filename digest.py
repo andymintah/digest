@@ -27,7 +27,7 @@ from anthropic import Anthropic
 FEEDS = [feed.strip() for feed in os.getenv("FEEDS", "").splitlines() if feed.strip()]
 if not FEEDS:
     FEEDS = json.loads(Path(__file__).with_name("feeds.json").read_text())
-MAX_PER_FEED = int(os.getenv("MAX_PER_FEED", "3"))
+MAX_PER_FEED = int(os.getenv("MAX_PER_FEED") or "3")
 MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-5-5")
 GMAIL_LABEL = os.getenv("GMAIL_LABEL") or "Newsletters"
 SEEN_FILE = Path(__file__).with_name("seen.json")
