@@ -92,6 +92,7 @@ def build_gmail_digest():
     address = os.getenv("GMAIL_ADDRESS")
     app_password = os.getenv("GMAIL_APP_PASSWORD")
     if not address and not app_password:
+        print("Gmail skipped: set GMAIL_ADDRESS and GMAIL_APP_PASSWORD to enable it.")
         return [], None, []
     if not address or not app_password:
         raise RuntimeError("Set both GMAIL_ADDRESS and GMAIL_APP_PASSWORD to enable Gmail.")
@@ -107,7 +108,8 @@ def build_gmail_digest():
             raise RuntimeError("Could not search unread Gmail messages.")
 
         items, processed_uids = [], []
-        for uid in search_data[0].split():
+        unread_uids = search_data[0].split()
+        for uid in unread_uids:
             status, fetch_data = mailbox.uid("fetch", uid, "(RFC822)")
             if status != "OK":
                 continue
@@ -119,8 +121,10 @@ def build_gmail_digest():
             sender = str(make_header(decode_header(message.get("From", "unknown sender"))))
             body = email_body(message)
             if body.strip():
-                items.append(f"*Newsletter: {subject}*\nFrom: {sender}\n{summarize(subject, body)}")
+                items.append(f"*{subject}*\nSource: Email - {sender}\n{summarize(subject, body)}")
                 processed_uids.append(uid)
+        if not unread_uids:
+            print(f"No unread messages in Gmail label '{GMAIL_LABEL}'.")
         return items, mailbox, processed_uids
     except Exception:
         mailbox.logout()
@@ -131,12 +135,16 @@ def build_digest():
     seen, items = load_seen(), []
     for feed_url in FEEDS:
         feed = feedparser.parse(feed_url)
+        source = feed.feed.get("title") or feed_url
         for e in feed.entries[:MAX_PER_FEED]:
             link = e.get("link")
             if not link or link in seen:
                 continue
             text = fetch_text(link, e.get("summary", ""))
-            items.append(f"*{e.get('title', 'Untitled')}*\n{summarize(e.get('title', ''), text)}\n{link}")
+            items.append(
+                f"*{e.get('title', 'Untitled')}*\nSource: RSS - {source}\n"
+                f"{summarize(e.get('title', ''), text)}\n{link}"
+            )
             seen.add(link)
     SEEN_FILE.write_text(json.dumps(sorted(seen)))
     return items
